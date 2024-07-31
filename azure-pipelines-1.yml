@@ -7,7 +7,6 @@ trigger:
 - master
 
 variables:
-
   # Azure Resource Manager connection created during pipeline creation
   azureSubscription: 'ead8dce3-9eb3-4979-95b3-e07ff8b008b1'
 
@@ -27,23 +26,27 @@ stages:
   - job: MavenPackageAndPublishArtifacts
     displayName: Maven Package and Publish Artifacts
     pool:
-      name: default
+      name: default  # Using the default agent pool
 
     steps:
     - task: Maven@3
       displayName: 'Maven Package'
       inputs:
         mavenPomFile: 'spring-hello-master/pom.xml'
+        goals: 'package'  # Ensure the Maven package goal is specified
 
     - task: CopyFiles@2
       displayName: 'Copy Files to artifact staging directory'
       inputs:
         SourceFolder: '$(System.DefaultWorkingDirectory)'
         Contents: '**/target/*.?(war|jar)'
-        TargetFolder: $(Build.ArtifactStagingDirectory)
+        TargetFolder: '$(Build.ArtifactStagingDirectory)'
 
-    - upload: $(Build.ArtifactStagingDirectory)
-      artifact: drop
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Build Artifacts'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'drop'
 
 - stage: Deploy
   displayName: Deploy stage
@@ -54,7 +57,7 @@ stages:
     displayName: Deploy Linux Web App
     environment: $(environmentName)
     pool:
-      name: default
+      name: default  # Using the default agent pool
     strategy:
       runOnce:
         deploy:
